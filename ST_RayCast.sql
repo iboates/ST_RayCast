@@ -1,18 +1,4 @@
-﻿-- DROP TABLE IF EXISTS circle_of_points;
--- CREATE TABLE circle_of_points (
--- 	id SERIAL
--- );
--- SELECT AddGeometryColumn('circle_of_points', 'geom', 26910, 'POINT', 2 );
--- 
--- DROP TABLE IF EXISTS circle_of_lines;
--- CREATE TABLE circle_of_lines (
--- 	id SERIAL
--- );
--- SELECT AddGeometryColumn('circle_of_lines', 'geom', 26910, 'LINESTRING', 2 );
-
--- DO
-
-CREATE OR REPLACE FUNCTION ST_RayCast(
+﻿CREATE OR REPLACE FUNCTION ST_RayCast(
 	in_point GEOMETRY,
 	in_boundaries GEOMETRY,
 	out_geom_type TEXT DEFAULT 'POINT',
@@ -28,22 +14,24 @@ DECLARE
 	opp FLOAT;
 	theta FLOAT = 0;
 	candidate_geom GEOMETRY;
+	return_geom GEOMETRY;
+	
 BEGIN
 
 	WHILE theta < 2*pi() LOOP
 
-		adj = 100 * COS(theta);
-		opp = 100 * SIN(theta);
+		adj = max_ray_dist * COS(theta);
+		opp = max_ray_dist * SIN(theta);
 
 		candidate_geom = ST_SetSRID(
 			ST_Intersection(
 				ST_SetSRID(
 					ST_MakeLine(
-						ST_Point(0, 0),
-						ST_Point(adj, opp)
+						in_point,
+						ST_SetSRID(ST_Point(adj, opp), 26910)
 					),
 					26910),
-				(SELECT ST_CollectionExtract(ST_Collect(geom), 2) FROM edge)
+				in_boundaries
 			),
 			26910
 		);
@@ -59,31 +47,69 @@ BEGIN
 						ST_DumpPoints(candidate_geom) AS dp
 					ORDER BY
 						ST_Distance(
-							ST_SetSRID(ST_Point(0, 0), 26910),
+							in_point,
 							ST_SetSRID(dp.geom, 26910)
 						) ASC
 					LIMIT 1);
 				
 			END IF;
 
-		
-			INSERT INTO circle_of_points(geom) VALUES (candidate_geom);
-
-			INSERT INTO circle_of_lines(geom) VALUES (
-				ST_MakeLine(
-					candidate_geom,
-					ST_SetSRID(ST_Point(0, 0), 26910)
-				)
-			);
+			IF out_geom_type = 'POINT' THEN
+				return_geom = ST_Collect(ST_CollectionExtract(return_geom, 1), candidate_geom);
+			ELSIF out_geom_type = 'LINESTRING' THEN
+				return_geom = ST_Collect(
+					ST_CollectionExtract(
+						return_geom,
+						2
+					),
+					ST_MakeLine(in_point, candidate_geom)
+				);
+			END IF;
 			
 		END IF;
 
-		theta = theta + 2*pi()/256;
+		theta = theta + 2*pi() / num_rays;
 
 	END LOOP;
+
+	IF out_geom_type = 'POINT' THEN
+		RETURN ST_Multi(ST_CollectionExtract(return_geom, 1));
+	ELSIF out_geom_type = 'LINESTRING' THEN
+		RETURN ST_Multi(ST_CollectionExtract(return_geom, 2));
+	END IF;
 
 END
 $$
 LANGUAGE plpgsql;
 
--- SELECT ST_AsEWKT(ST_CollectionExtract(ST_Collect(geom), 2)) FROM edge
+SELECT ST_AsEWKT(ST_RayCast(
+	ST_SetSRID(ST_Point(0, 0), 26910),
+	(SELECT ST_CollectionExtract(ST_Collect(geom), 2) FROM edge),
+	out_geom_type := 'POINT',
+	num_rays := 256,
+	max_ray_dist := 70
+));
+
+DROP TABLE IF EXISTS circle_of_points;
+CREATE TABLE circle_of_points AS (
+	SELECT ST_RayCast(
+		ST_SetSRID(ST_Point(0, 0), 26910),
+		(SELECT ST_CollectionExtract(ST_Collect(geom), 2) FROM edge),
+		out_geom_type := 'POINT',
+		num_rays := 256,
+		max_ray_dist := 70
+	)
+);
+
+DROP TABLE IF EXISTS circle_of_lines;
+CREATE TABLE circle_of_lines AS
+	(SELECT ST_CollectionExtract(
+		ST_RayCast(
+			ST_SetSRID(ST_Point(0, 0), 26910),
+			(SELECT ST_CollectionExtract(ST_Collect(geom), 2) FROM edge),
+			out_geom_type := 'LINESTRING',
+			num_rays := 256,
+			max_ray_dist := 70
+		),
+		2
+	))
