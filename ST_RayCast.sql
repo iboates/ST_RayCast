@@ -19,6 +19,12 @@ DECLARE
 	
 BEGIN
 
+	/* Do preliminary checks for common problems */
+
+	IF ST_SRID(in_boundaries) != srid THEN
+		RAISE EXCEPTION 'SRID of input points (%) does not match input boundaries SRID (%)', ST_SRID(in_point), ST_SRID(in_boundaries);
+	END IF;
+
 	WHILE theta < 2*pi() LOOP
 
 		adj = max_ray_dist * COS(theta);
@@ -78,18 +84,18 @@ END
 $$
 LANGUAGE plpgsql;
 
-SELECT ST_AsEWKT(ST_RayCast(
-	ST_SetSRID(ST_Point(0, 0), 26910),
-	(SELECT ST_CollectionExtract(ST_Collect(geom), 2) FROM edge),
-	out_geom_type := 'POINT',
-	num_rays := 256,
-	max_ray_dist := 70
-));
+-- SELECT ST_AsEWKT(ST_RayCast(
+-- 	ST_SetSRID(ST_Point(0, 0), 26910),
+-- 	(SELECT ST_CollectionExtract(ST_Collect(geom), 2) FROM edge),
+-- 	out_geom_type := 'POINT',
+-- 	num_rays := 256,
+-- 	max_ray_dist := 70
+-- ));
 
 DROP TABLE IF EXISTS circle_of_points;
 CREATE TABLE circle_of_points AS (
 	SELECT ST_RayCast(
-		ST_SetSRID(ST_Point(0, 0), 26910),
+		ST_SetSRID(ST_Point(0, 0), 26911),
 		(SELECT ST_CollectionExtract(ST_Collect(geom), 2) FROM edge),
 		out_geom_type := 'POINT',
 		num_rays := 256,
@@ -97,15 +103,15 @@ CREATE TABLE circle_of_points AS (
 	)
 );
 
-DROP TABLE IF EXISTS circle_of_lines;
-CREATE TABLE circle_of_lines AS
-	(SELECT ST_CollectionExtract(
-		ST_RayCast(
-			ST_SetSRID(ST_Point(0, 0), 26910),
-			(SELECT ST_CollectionExtract(ST_Collect(geom), 2) FROM edge),
-			out_geom_type := 'LINESTRING',
-			num_rays := 256,
-			max_ray_dist := 70
-		),
-		2
-	))
+-- DROP TABLE IF EXISTS circle_of_lines;
+-- CREATE TABLE circle_of_lines AS
+-- 	(SELECT ST_CollectionExtract(
+-- 		ST_RayCast(
+-- 			ST_SetSRID(ST_Point(0, 0), 26910),
+-- 			(SELECT ST_CollectionExtract(ST_Collect(geom), 2) FROM edge),
+-- 			out_geom_type := 'LINESTRING',
+-- 			num_rays := 256,
+-- 			max_ray_dist := 70
+-- 		),
+-- 		2
+-- 	))
