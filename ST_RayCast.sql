@@ -13,6 +13,7 @@ DECLARE
 	adj FLOAT;
 	opp FLOAT;
 	theta FLOAT = 0;
+	srid INTEGER = ST_SRID(in_point);
 	candidate_geom GEOMETRY;
 	return_geom GEOMETRY;
 	
@@ -23,17 +24,12 @@ BEGIN
 		adj = max_ray_dist * COS(theta);
 		opp = max_ray_dist * SIN(theta);
 
-		candidate_geom = ST_SetSRID(
-			ST_Intersection(
-				ST_SetSRID(
-					ST_MakeLine(
-						in_point,
-						ST_SetSRID(ST_Point(adj, opp), 26910)
-					),
-					26910),
-				in_boundaries
+		candidate_geom = ST_Intersection(
+			ST_MakeLine(
+				in_point,
+				ST_SetSRID(ST_Point(adj, opp), srid)
 			),
-			26910
+			in_boundaries
 		);
 
 		IF NOT ST_IsEmpty(candidate_geom) THEN
@@ -48,7 +44,7 @@ BEGIN
 					ORDER BY
 						ST_Distance(
 							in_point,
-							ST_SetSRID(dp.geom, 26910)
+							dp.geom
 						) ASC
 					LIMIT 1);
 				
