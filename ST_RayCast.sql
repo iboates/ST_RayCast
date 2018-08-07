@@ -44,7 +44,7 @@ BEGIN
 
 				candidate_geom = (
 					SELECT
-						ST_AsEWKT(dp.geom)
+						dp.geom
 					FROM
 						ST_DumpPoints(candidate_geom) AS dp
 					ORDER BY
@@ -52,7 +52,8 @@ BEGIN
 							in_point,
 							dp.geom
 						) ASC
-					LIMIT 1);
+					LIMIT 1
+				);
 				
 			END IF;
 
@@ -71,6 +72,7 @@ BEGIN
 		END IF;
 
 		theta = theta + 2*pi() / num_rays;
+-- 		INSERT INTO interm_result (geom) VALUES (ST_MakeLine(in_point, candidate_geom));
 
 	END LOOP;
 
@@ -80,34 +82,28 @@ BEGIN
 		RETURN ST_Multi(ST_CollectionExtract(return_geom, 2));
 	END IF;
 
+	RAISE NOTICE '%', ST_AsEWKT(candidate_geom);
+
 END
 $$
 LANGUAGE plpgsql;
 
--- SELECT ST_AsEWKT(ST_RayCast(
--- 	ST_SetSRID(ST_Point(0, 0), 26910),
--- 	(SELECT ST_CollectionExtract(ST_Collect(geom), 2) FROM edge),
--- 	out_geom_type := 'POINT',
--- 	num_rays := 256,
--- 	max_ray_dist := 70
--- ));
-
-DROP TABLE IF EXISTS circle_of_points;
-CREATE TABLE circle_of_points AS (
-	SELECT ST_RayCast(
-		ST_SetSRID(ST_Point(0, 0), 26911),
-		(SELECT ST_CollectionExtract(ST_Collect(geom), 2) FROM edge),
-		out_geom_type := 'POINT',
-		num_rays := 256,
-		max_ray_dist := 70
-	)
-);
+-- DROP TABLE IF EXISTS circle_of_points;
+-- CREATE TABLE circle_of_points AS (
+-- 	SELECT ST_RayCast(
+-- 		ST_SetSRID(ST_Point(0, 0), 26910),
+-- 		(SELECT ST_CollectionExtract(ST_Collect(geom), 2) FROM edge),
+-- 		out_geom_type := 'POINT',
+-- 		num_rays := 256,
+-- 		max_ray_dist := 70
+-- 	)
+-- );
 
 -- DROP TABLE IF EXISTS circle_of_lines;
 -- CREATE TABLE circle_of_lines AS
 -- 	(SELECT ST_CollectionExtract(
 -- 		ST_RayCast(
--- 			ST_SetSRID(ST_Point(0, 0), 26910),
+-- 			(SELECT ST_CollectionExtract(ST_Collect(geom), 1) FROM point),
 -- 			(SELECT ST_CollectionExtract(ST_Collect(geom), 2) FROM edge),
 -- 			out_geom_type := 'LINESTRING',
 -- 			num_rays := 256,
@@ -115,3 +111,27 @@ CREATE TABLE circle_of_points AS (
 -- 		),
 -- 		2
 -- 	))
+
+DROP TABLE IF EXISTS interm_result;
+CREATE TABLE interm_result ( 
+	id INTEGER
+);
+SELECT AddGeometryColumn('interm_result', 'geom', 26910, 'GEOMETRY', 2);
+
+DROP TABLE IF EXISTS multi_rays;
+CREATE TABLE multi_rays AS (
+	SELECT
+		p.id AS p_id,
+		(SELECT ST_RayCast(
+			p.geom,
+			ST_CollectionExtract(ST_Collect(e.geom), 2),
+			out_geom_type := 'LINESTRING',
+			num_rays := 8,
+			max_ray_dist := 150
+		)) AS geom
+	FROM 
+		point AS p,
+		edge AS e
+	GROUP BY
+		p.id
+)
