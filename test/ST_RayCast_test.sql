@@ -31,8 +31,8 @@ CREATE TABLE test_lines_pointoutput AS (
 			p.geom,
 			ST_CollectionExtract(ST_Collect(l.geom), 2),
 			out_geom_type := 'MULTIPOINT',
-			num_rays := 64,
-			max_ray_dist := 500
+			num_rays := 32,
+			max_ray_dist := 100
 		)) AS geom
 	FROM 
 		point AS p,
@@ -50,8 +50,8 @@ CREATE TABLE test_lines_lineoutput AS (
 			p.geom,
 			ST_CollectionExtract(ST_Collect(l.geom), 2),
 			out_geom_type := 'MULTILINESTRING',
-			num_rays := 64,
-			max_ray_dist := 500
+			num_rays := 32,
+			max_ray_dist := 100
 		)) AS geom
 	FROM 
 		point AS p,
@@ -69,8 +69,8 @@ CREATE TABLE test_polys_pointoutput AS (
 			p.geom,
 			ST_CollectionExtract(ST_Collect(ST_ExteriorRing(po.geom)), 2),
 			out_geom_type := 'MULTIPOINT',
-			num_rays := 64,
-			max_ray_dist := 500
+			num_rays := 32,
+			max_ray_dist := 100
 		)) AS geom
 	FROM 
 		point AS p,
@@ -88,8 +88,8 @@ CREATE TABLE test_polys_lineoutput AS (
 			p.geom,
 			ST_CollectionExtract(ST_Collect(ST_ExteriorRing(po.geom)), 2),
 			out_geom_type := 'MULTILINESTRING',
-			num_rays := 64,
-			max_ray_dist := 500
+			num_rays := 32,
+			max_ray_dist := 100
 		)) AS geom
 	FROM 
 		point AS p,
