@@ -1,5 +1,7 @@
 # ST_RayCast
 
+![Sample image of casting rays from points onto polylines](img/sample.png?raw=true "Casting rays from points onto polylines")
+
 ## Overview
 
 This is a PostGIS function that allows you to cast rays from point features to linestring or polygon features. Returned geometry can be of `MULTIPOINT` or `MULTILINESTRING` type. Parameters controlling the number of casted rays and the maximum ray distance are also be specified
