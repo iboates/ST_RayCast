@@ -15,7 +15,11 @@ Execute the contents of `ST_RayCast.sql` as a query on your database. To confirm
 
 ## Usage / Parameters
 
-Call the function as you would any other PostGIS function. There are also sample function calls in `test/ST_RayCast_test.sql`. The parameters are as follows:
+Call the function as you would any other PostGIS function. There are also sample function calls in `test/ST_RayCast_test.sql`.
+
+`ST_RayCast(in_point GEOMETRY, in_boundaries GEOMETRY,	out_geom_type TEXT,	num_rays INTEGER,	max_ray_dist FLOAT)`
+
+The parameters are as follows:
 
 * `in_point GEOMETRY`: Input points from which to cast the rays. Must be of `POINT` type.
 * `in_boundaries GEOMETRY`: Input linestrings against which the rays are casted. Must be of `LINESTRING` type. To use `POLYGON` geometries instead, wrap them in a call to `ST_ExteriorRing` (More specialized transformations may be necessary in the case of holes).
