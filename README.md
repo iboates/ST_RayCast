@@ -4,7 +4,9 @@
 
 ## Overview
 
-This is a PostGIS function that allows you to cast rays from point features to linestring or polygon features. Returned geometry can be of `MULTIPOINT` or `MULTILINESTRING` type. Parameters controlling the number of casted rays and the maximum ray distance are also be specified
+This is a PostGIS function that allows you to cast rays from point features to linestring or polygon features. Returned geometry can be of `MULTIPOINT` or `MULTILINESTRING` type. Parameters controlling the number of casted rays and the maximum ray distance are also be specified.
+
+This function was developed on PostgreSQL version 9.6.10 and PostGIS version 2.4.
 
 ## Installation
 
